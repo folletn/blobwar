@@ -1,6 +1,7 @@
 #include "strategy.h"
 #include <omp.h>
 
+
 void Strategy::applyMove (const movement& mv) {
      if ((mv.ox-mv.nx+1)*(mv.ox-mv.nx-1)>0 || (mv.oy-mv.ny+1)*(mv.oy-mv.ny-1)>0) {
 	  _blobs.set(mv.ox, mv.oy,-1);
