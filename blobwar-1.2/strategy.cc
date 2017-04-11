@@ -1,7 +1,6 @@
 #include "strategy.h"
 #include <omp.h>
 
-
 void Strategy::applyMove (const movement& mv) {
      if ((mv.ox-mv.nx+1)*(mv.ox-mv.nx-1)>0 || (mv.oy-mv.ny+1)*(mv.oy-mv.ny-1)>0) {
 	  _blobs.set(mv.ox, mv.oy,-1);
@@ -122,59 +121,6 @@ Sint32 Strategy::min(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      return scoreMin;
 }
 
-
-// Sint32 Strategy::max(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
-//   if (depth == 0) return estimateCurrentScore(player);
-//   Sint32 scoreMAX = -65000;
-//   vector<movement> valid_moves;
-//   movement mv(0,0,0,0);
-//   valid_moves = computeValidMoves(valid_moves);
-//   if (valid_moves.size() == 0) return estimateCurrentScore(player);
-//   //The following code find the max score.
-//   Sint32 score;
-//   Sint32 newalpha = alpha;
-//   for (unsigned int i = 0; i < valid_moves.size(); i++) {
-//     Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
-//     strat.applyMove(valid_moves[i]);
-//     score = strat.min(depth - 1, player, newalpha, beta);
-//     if (score > scoreMAX) {
-//       scoreMAX = score;
-//       newalpha = scoreMAX;
-//     }
-//     //coupure beta
-//     if (scoreMAX > beta) {
-//       return scoreMAX;
-//     }
-//   }
-//   return scoreMAX;
-// }
-
-// Sint32 Strategy::min(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
-//   if (depth == 0) return estimateCurrentScore(player);
-//   Sint32 scoreMIN = 65000;
-//   vector<movement> valid_moves;
-//   movement mv(0,0,0,0);
-//   valid_moves = computeValidMoves(valid_moves);
-//   if (valid_moves.size() == 0) return estimateCurrentScore(player);
-//   //The following code find the min score.
-//   Sint32 score;
-//   Sint32 newbeta = beta;
-//   for (unsigned int i = 0; i < valid_moves.size(); i++) {
-//     Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
-//     strat.applyMove(valid_moves[i]);
-//     score = strat.max(depth - 1, player, alpha, newbeta);
-//     if (score < scoreMIN) {
-//       scoreMIN = score;
-//       newbeta = scoreMIN;
-//     }
-//     //coupure alpha
-//     if (scoreMIN < alpha) {
-//       return scoreMIN;
-//     }
-//   }
-//   return scoreMIN;
-// }
-
 movement Strategy::computeBestMove (int depth, Uint16 player) {
      Sint32 scoreMAX = -65000;
      vector<movement> valid_moves;
@@ -222,8 +168,10 @@ movement Strategy::computeBestMove (int depth, Uint16 player) {
 }
 
 void Strategy::computeBestMove () {
-     //We can change depth here
-     movement mv(computeBestMove(3, _current_player));
-     _saveBestMove(mv);
-     return;
+  int i = 3;
+  while(true) {
+    movement mv(computeBestMove(i, _current_player));
+    _saveBestMove(mv);
+    i++;
+  }
 }
