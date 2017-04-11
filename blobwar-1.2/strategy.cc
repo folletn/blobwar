@@ -35,16 +35,20 @@ Sint32 Strategy::estimateCurrentScore (Uint16 player) const {
 
 vector<movement>& Strategy::computeValidMoves(vector<movement>& valid_moves) {
      //The following code find valid moves.
-     movement mv(0,0,0,0);
      //iterate on starting position
-     for(mv.ox = 0 ; mv.ox < 8 ; mv.ox++) {
-	  for(mv.oy = 0 ; mv.oy < 8 ; mv.oy++) {
-	       if (_blobs.get(mv.ox, mv.oy) == (int) _current_player) {
+#pragma omp parallel for
+     for(int ox = 0 ; ox < 8 ; ox++) {
+#pragma omp parallel for
+	  for(int oy = 0 ; oy < 8 ; oy++) {
+	       if (_blobs.get(ox, oy) == (int) _current_player) {
 		    //iterate on possible destinations
-		    for(mv.nx = std::max(0,mv.ox-2) ; mv.nx <= std::min(7,mv.ox+2) ; mv.nx++) {
-			 for(mv.ny = std::max(0,mv.oy-2) ; mv.ny <= std::min(7,mv.oy+2) ; mv.ny++) {
-			      if (_holes.get(mv.nx, mv.ny)) continue;
-			      if (_blobs.get(mv.nx, mv.ny) == -1) {
+#pragma omp parallel for
+		    for(int nx = std::max(0,ox-2) ; nx <= std::min(7,ox+2) ; nx++) {
+#pragma omp parallel for
+			 for(int ny = std::max(0,oy-2) ; ny <= std::min(7,oy+2) ; ny++) {
+			      if (_holes.get(nx, ny)) continue;
+			      if (_blobs.get(nx, ny) == -1) {
+			           movement mv(ox,oy,nx,ny);
 				   valid_moves.push_back(mv);
 			      }
 			 }
@@ -58,7 +62,6 @@ vector<movement>& Strategy::computeValidMoves(vector<movement>& valid_moves) {
 
 Sint32 Strategy::max(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      if (depth == 0) return estimateCurrentScore(player);
-
      Sint32 scoreMax;
      vector<movement> valid_moves;
      movement mv(0,0,0,0);
@@ -75,23 +78,19 @@ Sint32 Strategy::max(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      //lancement de n-1 thread executés en parallèle
      Sint32 table[valid_moves.size()]; 
      table[0]=score;
-     #pragma omp parallel for
+#pragma omp parallel for
      for (unsigned int i = 1; i < valid_moves.size(); i++) {
 	  Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
 	  strat.applyMove(valid_moves[i]);
 	  score = strat.min(depth - 1, player, scoreMax, beta);
 	  table[i]=score;
-     }
-     for (unsigned int j = 1; j < valid_moves.size();j++){
-     	  if(scoreMax < table[j]) scoreMax=table[j];
-     }
-  
+	  if(scoreMax < table[i]) scoreMax=table[i];
+     }  
      return scoreMax;
 }
 
 Sint32 Strategy::min(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      if (depth == 0) return estimateCurrentScore(player);
-
      Sint32 scoreMin;
      vector<movement> valid_moves;
      movement mv(0,0,0,0);
@@ -108,15 +107,13 @@ Sint32 Strategy::min(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      //lancement de n-1 thread executés en parallèle
      Sint32 table[valid_moves.size()];
      table[0]=score;
-     #pragma omp parallel for
+#pragma omp parallel for
      for (unsigned int i = 1; i < valid_moves.size(); i++) {
-	  Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
-	  strat.applyMove(valid_moves[i]);
-	  score = strat.max(depth - 1, player, alpha, scoreMin);
-	  table[i]=score;
-     }
-     for (unsigned int j = 1; j < valid_moves.size();j++){
-     	  if(scoreMin > table[j]) scoreMin=table[j];
+       Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
+       strat.applyMove(valid_moves[i]);
+       score = strat.max(depth - 1, player, alpha, scoreMin);
+       table[i]=score;
+       if(scoreMin > table[i]) scoreMin=table[i];
      }
      return scoreMin;
 }
@@ -149,20 +146,16 @@ movement Strategy::computeBestMove (int depth, Uint16 player) {
      Sint32 table[valid_moves.size()]; 
      Sint32 alpha = -66000;
      Sint32 beta = 66000;
-     #pragma omp parallel for
+#pragma omp parallel for
      for (unsigned int i = 0; i < valid_moves.size(); i++) {
 	  Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
 	  strat.applyMove(valid_moves[i]);
 	  table[i] = strat.min(depth - 1, player, alpha, beta);
-	  if (table[i] > alpha) {
-	       alpha = table[i];
+	  if (table[i] > scoreMAX) {
+	    scoreMAX = table[i];
+	    mv = valid_moves[i];
+	    alpha = scoreMAX;
 	  }
-     }
-     for (unsigned int i = 1; i < valid_moves.size();i++){
-       if (table[i] > scoreMAX) {
-	 scoreMAX = table[i];
-	 mv = valid_moves[i];
-       }
      }
      return mv;
 }
