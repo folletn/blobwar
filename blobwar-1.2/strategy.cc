@@ -1,11 +1,5 @@
 #include "strategy.h"
-#include "tbb/task_scheduler_init.h"
-#include "tbb/parallel_for.h"
-#include "tbb/blocked_range.h"
-#include "tbb/tick_count.h"
 
-using namespace tbb;
-using namespace std;
 
 void Strategy::applyMove (const movement& mv) {
      if ((mv.ox-mv.nx+1)*(mv.ox-mv.nx-1)>0 || (mv.oy-mv.ny+1)*(mv.oy-mv.ny-1)>0) {
