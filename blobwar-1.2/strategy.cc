@@ -58,7 +58,7 @@ vector<movement>& Strategy::computeValidMoves(vector<movement>& valid_moves) {
 Sint32 Strategy::max(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      if (depth == 0) return estimateCurrentScore(player);
 
-  
+     Sint32 scoreMax;
      vector<movement> valid_moves;
      movement mv(0,0,0,0);
      valid_moves = computeValidMoves(valid_moves);
@@ -68,7 +68,8 @@ Sint32 Strategy::max(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      strat1.applyMove(valid_moves[0]);
      Sint32 score;
      score  = strat1.min(depth - 1, player, alpha, beta);
-     if(score>beta) return score;
+     scoreMax=score;
+     if(scoreMax>beta) return scoreMax;
      //Si le premier noeud du max n'est pas une coupure beta
      //lancement de n-1 thread executés en parallèle
      Sint32 table[valid_moves.size()]; 
@@ -76,22 +77,20 @@ Sint32 Strategy::max(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      for (unsigned int i = 1; i < valid_moves.size(); i++) {
 	  Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
 	  strat.applyMove(valid_moves[i]);
-	  score = strat.min(depth - 1, player, table[0], beta);
+	  score = strat.min(depth - 1, player, scoreMax, beta);
 	  table[i]=score;
      }
-     Sint32 max=table[0];
-     for (unsigned int j = 1; sizeof(table);j++){
-     	  if(max < table[j]) max=table[j];
-     	  if(max>beta) return table[j];
+     for (unsigned int j = 1; j < valid_moves.size();j++){
+     	  if(scoreMax < table[j]) scoreMax=table[j];
      }
   
-     return max;
+     return scoreMax;
 }
 
 Sint32 Strategy::min(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      if (depth == 0) return estimateCurrentScore(player);
 
-  
+     Sint32 scoreMin;
      vector<movement> valid_moves;
      movement mv(0,0,0,0);
      valid_moves = computeValidMoves(valid_moves);
@@ -101,7 +100,8 @@ Sint32 Strategy::min(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      strat1.applyMove(valid_moves[0]);
      Sint32 score;
      score = strat1.max(depth - 1, player, alpha, beta);
-     if(score<alpha) return score;
+     scoreMin=score;
+     if(scoreMin<alpha) return scoreMin;
      //Si le premier noeud du min n'est pas une coupure alpha
      //lancement de n-1 thread executés en parallèle
      Sint32 table[valid_moves.size()];
@@ -109,15 +109,13 @@ Sint32 Strategy::min(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      for (unsigned int i = 1; i < valid_moves.size(); i++) {
 	  Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
 	  strat.applyMove(valid_moves[i]);
-	  score = strat.max(depth - 1, player, alpha, table[0]);
+	  score = strat.max(depth - 1, player, alpha, scoreMin);
 	  table[i]=score;
      }
-     Sint32 min=table[0];
-     for (unsigned int j = 1; sizeof(table);j++){
-     	  if(min > table[j]) min=table[j];
-     	  if(min < alpha) return table[j];
+     for (unsigned int j = 1; j < valid_moves.size();j++){
+     	  if(scoreMin > table[j]) scoreMin=table[j];
      }
-     return min;
+     return scoreMin;
 }
 
 
