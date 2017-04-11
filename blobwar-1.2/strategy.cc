@@ -1,4 +1,5 @@
 #include "strategy.h"
+#include <omp.h>
 
 void Strategy::applyMove (const movement& mv) {
      if ((mv.ox-mv.nx+1)*(mv.ox-mv.nx-1)>0 || (mv.oy-mv.ny+1)*(mv.oy-mv.ny-1)>0) {
@@ -74,6 +75,7 @@ Sint32 Strategy::max(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      //lancement de n-1 thread executés en parallèle
      Sint32 table[valid_moves.size()]; 
      table[0]=score;
+     #pragma omp parallel for
      for (unsigned int i = 1; i < valid_moves.size(); i++) {
 	  Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
 	  strat.applyMove(valid_moves[i]);
@@ -106,6 +108,7 @@ Sint32 Strategy::min(int depth, Uint16 player, Sint32 alpha, Sint32 beta) {
      //lancement de n-1 thread executés en parallèle
      Sint32 table[valid_moves.size()];
      table[0]=score;
+     #pragma omp parallel for
      for (unsigned int i = 1; i < valid_moves.size(); i++) {
 	  Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
 	  strat.applyMove(valid_moves[i]);
@@ -195,27 +198,31 @@ movement Strategy::computeBestMove (int depth, Uint16 player) {
      }
 
      //The following code find the move with the best score calculated by MIN/MAX
-     Sint32 score;
+     //lancement de n-1 thread executés en parallèle
+     Sint32 table[valid_moves.size()]; 
      Sint32 alpha = -66000;
      Sint32 beta = 66000;
+     #pragma omp parallel for
      for (unsigned int i = 0; i < valid_moves.size(); i++) {
 	  Strategy strat = Strategy(_blobs, _holes, _current_player, _saveBestMove);
 	  strat.applyMove(valid_moves[i]);
-	  score = strat.min(depth - 1, player, alpha, beta);
-	  if (score > scoreMAX) {
-	       scoreMAX = score;
-	       mv = valid_moves[i];
-	       alpha = scoreMAX;
+	  table[i] = strat.min(depth - 1, player, alpha, beta);
+	  if (table[i] > alpha) {
+	       alpha = table[i];
 	  }
+     }
+     for (unsigned int i = 1; i < valid_moves.size();i++){
+       if (table[i] > scoreMAX) {
+	 scoreMAX = table[i];
+	 mv = valid_moves[i];
+       }
      }
      return mv;
 }
 
 void Strategy::computeBestMove () {
      //We can change depth here
-     movement mv(computeBestMove(4, _current_player));
+     movement mv(computeBestMove(3, _current_player));
      _saveBestMove(mv);
      return;
 }
-
-
